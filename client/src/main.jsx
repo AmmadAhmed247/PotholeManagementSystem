@@ -10,8 +10,8 @@ import MainLayout from "./layout/MainLayout.jsx"
 import '@fontsource/montserrat/400.css';
 import '@fontsource/montserrat/700.css';
 import Complaint from './pages/Complaint.jsx'
-import ViewComplaints from './pages/ViewComplaints.jsx'
-
+import MnaDashboard from './pages/MnaDashboard.jsx'
+import UserDashboard from './pages/UserDashboard.jsx'
 
 const queryClient=new QueryClient();
 
@@ -23,7 +23,8 @@ const router=createBrowserRouter([
       {path:"/about",element:<About/>},
       {path:"/leaderboard",element:<Leaderboard/>},
       {path:"/complaints",element:<Complaint/>},
-      {path:"/viewcomplaints",element:<ViewComplaints/>},
+      {path:"/mnadashboard",element:<MnaDashboard/>},
+      {path:"/usercomplaints",element:<UserDashboard/>},
     ]
   }
 ])

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MapIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Home = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -24,10 +25,13 @@ const Home = () => {
           Join the movement to make Pakistan's roads safer. Upload photos, tag
           authorities, and help create better infrastructure for everyone.
         </span>
-        <button className="bg-green-500 hover:scale-105 active:scale-95 transition-all px-6 rounded-2xl text-white text-2xl py-2 shadow-md">
+        <Link to={"/complaints"} className="bg-green-500 hover:scale-105 active:scale-95 transition-all px-6 rounded-2xl text-white text-2xl py-2 shadow-md">
           Report a pothole
-        </button>
-        <span className='text-2xl mt-10 mb-5' >How it Works</span>
+        </Link>
+        <span className='text-2xl mt-20 mb-5  ' >How it Works</span>
+      
+
+        
         <div className="flex flex-row gap-4">
           <div className="w-fit h-fit p-4 flex items-center justify-center  rounded-2xl">
             <span className='text-xl items-center justify-center flex flex-col ' ><span className='bg-green-500 text-white mb-2 rounded-2xl px-4 py-1 w-fit ' >1</span>Spot & Snap <span className='text-sm w-fit' >See a pothole? Take a photo with your phone</span> </span>
@@ -38,8 +42,7 @@ const Home = () => {
           <div className="w-fit h-fit p-4 flex items-center justify-center  rounded-2xl">
             <span className='text-xl items-center justify-center flex flex-col ' ><span className='bg-green-500 text-white mb-2 rounded-2xl px-4 py-1 w-fit ' >3</span>Get It Fixed <span className='text-sm w-fit' >Authorities are notified and track the repair</span> </span>
           </div>
-          
-          
+  
         </div>
       </div>
     </div>
