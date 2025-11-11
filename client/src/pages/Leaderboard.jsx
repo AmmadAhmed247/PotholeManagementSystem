@@ -5,92 +5,26 @@ const Leaderboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const sampleUsers = [
-    {
-      id: 'user_001',
-      name: 'Ahmed Khan',
-      totalComplaints: 47,
-      resolvedComplaints: 38,
-      pendingComplaints: 9,
-      joinedDate: 'Oct 15'
-    },
-    {
-      id: 'user_002',
-      name: 'Fatima Ali',
-      totalComplaints: 42,
-      resolvedComplaints: 35,
-      pendingComplaints: 7,
-      joinedDate: 'Oct 20'
-    },
-    {
-      id: 'user_003',
-      name: 'Hassan Raza',
-      totalComplaints: 38,
-      resolvedComplaints: 30,
-      pendingComplaints: 8,
-      joinedDate: 'Oct 22'
-    },
-    {
-      id: 'user_004',
-      name: 'Ayesha Malik',
-      totalComplaints: 33,
-      resolvedComplaints: 28,
-      pendingComplaints: 5,
-      joinedDate: 'Oct 25'
-    },
-    {
-      id: 'user_005',
-      name: 'Usman Sheikh',
-      totalComplaints: 29,
-      resolvedComplaints: 22,
-      pendingComplaints: 7,
-      joinedDate: 'Oct 28'
-    },
-    {
-      id: 'user_006',
-      name: 'Zainab Ahmed',
-      totalComplaints: 25,
-      resolvedComplaints: 20,
-      pendingComplaints: 5,
-      joinedDate: 'Nov 1'
-    },
-    {
-      id: 'user_007',
-      name: 'Ali Hassan',
-      totalComplaints: 21,
-      resolvedComplaints: 18,
-      pendingComplaints: 3,
-      joinedDate: 'Nov 3'
-    },
-    {
-      id: 'user_008',
-      name: 'Sara Imran',
-      totalComplaints: 18,
-      resolvedComplaints: 15,
-      pendingComplaints: 3,
-      joinedDate: 'Nov 5'
-    },
-    {
-      id: 'user_009',
-      name: 'Bilal Ahmed',
-      totalComplaints: 15,
-      resolvedComplaints: 12,
-      pendingComplaints: 3,
-      joinedDate: 'Nov 6'
-    },
-    {
-      id: 'user_010',
-      name: 'Mariam Khan',
-      totalComplaints: 12,
-      resolvedComplaints: 10,
-      pendingComplaints: 2,
-      joinedDate: 'Nov 7'
-    }
-  ];
-
+  // ✅ Fetch leaderboard data from backend
   useEffect(() => {
-    setUsers(sampleUsers);
-    setLoading(false);
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/leaderboard");
+        const data = await res.json();
+        console.log("Leaderboard API Response:", data);
+        
+        // Backend returns { top: [...] }
+        const leaderboardData = data.top || [];
+        console.log("Processed leaderboard data:", leaderboardData);
+        
+        setUsers(leaderboardData);
+      } catch (err) {
+        console.error("Error fetching leaderboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLeaderboard();
   }, []);
 
   const getResolutionRate = (resolved, total) => {
@@ -227,54 +161,56 @@ const Leaderboard = () => {
         {/* Rest of Rankings */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Other Contributors</h2>
-          <div className="space-y-3">
-            {users.slice(3).map((user, index) => (
-              <div 
-                key={user.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-green-50 transition-colors border border-gray-100"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <span className="text-lg font-bold text-green-500">#{index + 4}</span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
-                    <p className="text-sm text-gray-500">Member since {user.joinedDate}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-6">
-                  <div className="text-center hidden md:block">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-green-500" />
-                      <span className="text-lg font-bold text-green-500">{user.totalComplaints}</span>
+          {users.length > 3 ? (
+            <div className="space-y-3">
+              {users.slice(3).map((user, index) => (
+                <div 
+                  key={user.id}
+                  className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-green-50 transition-colors border border-gray-100"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <span className="text-lg font-bold text-green-500">#{index + 4}</span>
                     </div>
-                    <div className="text-xs text-gray-500">Reports</div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
+                      <p className="text-sm text-gray-500">Member since {user.joinedDate}</p>
+                    </div>
                   </div>
                   
-                  <div className="text-center hidden md:block">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-gray-600" />
-                      <span className="text-lg font-semibold text-gray-900">{user.resolvedComplaints}</span>
+                  <div className="flex items-center gap-6">
+                    <div className="text-center hidden md:block">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-green-500" />
+                        <span className="text-lg font-bold text-green-500">{user.totalComplaints}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">Reports</div>
                     </div>
-                    <div className="text-xs text-gray-500">Resolved</div>
-                  </div>
-                  
-                  <div className="text-center hidden md:block">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-lg font-medium text-gray-600">{user.pendingComplaints}</span>
-                    </div>
-                    <div className="text-xs text-gray-500">Pending</div>
-                  </div>
-                  
-                  <div className="text-right">
                     
+                    <div className="text-center hidden md:block">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-gray-600" />
+                        <span className="text-lg font-semibold text-gray-900">{user.resolvedComplaints}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">Resolved</div>
+                    </div>
+                    
+                    <div className="text-center hidden md:block">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span className="text-lg font-medium text-gray-600">{user.pendingComplaints}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">Pending</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <p>No additional contributors yet</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

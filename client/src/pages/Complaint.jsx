@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Upload, MapPin, Mail, Phone, CreditCard, User, FileText } from 'lucide-react';
 
 export default function ComplaintForm() {
@@ -15,13 +16,11 @@ export default function ComplaintForm() {
 
   const [imagePreview, setImagePreview] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleImageUpload = (e) => {
@@ -29,16 +28,27 @@ export default function ComplaintForm() {
     if (file) {
       setFormData(prev => ({ ...prev, image: file }));
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
+      reader.onloadend = () => setImagePreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+
+  try {
+    const payload = {
+      fullName: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      cnic: formData.cnic,
+      location: formData.location,
+      chairman: formData.chairman,
+      complaintDetails: formData.complaint,
+    };
+
+    await axios.post('http://localhost:5000/api/complaint', payload);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -54,7 +64,12 @@ export default function ComplaintForm() {
       });
       setImagePreview(null);
     }, 3000);
-  };
+  } catch (err) {
+    console.error(err);
+    setError(err.response?.data?.message || 'Submission failed');
+  }
+};
+
 
   if (submitted) {
     return (
@@ -82,10 +97,12 @@ export default function ComplaintForm() {
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            {error && <p className="text-red-500">{error}</p>}
+
+            {/* Full Name */}
             <div>
               <label className="flex items-center text-gray-700 font-semibold mb-2">
-                <User className="w-4 h-4 mr-2 text-green-500" />
-                Full Name *
+                <User className="w-4 h-4 mr-2 text-green-500" /> Full Name *
               </label>
               <input
                 type="text"
@@ -98,10 +115,10 @@ export default function ComplaintForm() {
               />
             </div>
 
+            {/* Email */}
             <div>
               <label className="flex items-center text-gray-700 font-semibold mb-2">
-                <Mail className="w-4 h-4 mr-2 text-green-500" />
-                Email Address *
+                <Mail className="w-4 h-4 mr-2 text-green-500" /> Email Address *
               </label>
               <input
                 type="email"
@@ -114,10 +131,10 @@ export default function ComplaintForm() {
               />
             </div>
 
+            {/* Phone */}
             <div>
               <label className="flex items-center text-gray-700 font-semibold mb-2">
-                <Phone className="w-4 h-4 mr-2 text-green-500" />
-                Phone Number *
+                <Phone className="w-4 h-4 mr-2 text-green-500" /> Phone Number *
               </label>
               <input
                 type="tel"
@@ -130,10 +147,10 @@ export default function ComplaintForm() {
               />
             </div>
 
+            {/* CNIC */}
             <div>
               <label className="flex items-center text-gray-700 font-semibold mb-2">
-                <CreditCard className="w-4 h-4 mr-2 text-green-500" />
-                CNIC (Optional)
+                <CreditCard className="w-4 h-4 mr-2 text-green-500" /> CNIC (Optional)
               </label>
               <input
                 type="text"
@@ -145,10 +162,10 @@ export default function ComplaintForm() {
               />
             </div>
 
+            {/* Location */}
             <div>
               <label className="flex items-center text-gray-700 font-semibold mb-2">
-                <MapPin className="w-4 h-4 mr-2 text-green-500" />
-                Location *
+                <MapPin className="w-4 h-4 mr-2 text-green-500" /> Location *
               </label>
               <input
                 type="text"
@@ -161,10 +178,10 @@ export default function ComplaintForm() {
               />
             </div>
 
+            {/* Chairman */}
             <div>
               <label className="flex items-center text-gray-700 font-semibold mb-2">
-                <User className="w-4 h-4 mr-2 text-green-500" />
-                Chairman (Optional)
+                <User className="w-4 h-4 mr-2 text-green-500" /> Chairman (Optional)
               </label>
               <input
                 type="text"
@@ -176,10 +193,10 @@ export default function ComplaintForm() {
               />
             </div>
 
+            {/* Complaint Details */}
             <div>
               <label className="flex items-center text-gray-700 font-semibold mb-2">
-                <FileText className="w-4 h-4 mr-2 text-green-500" />
-                Complaint Details *
+                <FileText className="w-4 h-4 mr-2 text-green-500" /> Complaint Details *
               </label>
               <textarea
                 name="complaint"
@@ -192,10 +209,10 @@ export default function ComplaintForm() {
               />
             </div>
 
+            {/* Image Upload */}
             <div>
               <label className="flex items-center text-gray-700 font-semibold mb-2">
-                <Upload className="w-4 h-4 mr-2 text-green-500" />
-                Upload Image (Optional)
+                <Upload className="w-4 h-4 mr-2 text-green-500" /> Upload Image (Optional)
               </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-500 transition cursor-pointer">
                 <input

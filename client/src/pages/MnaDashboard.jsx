@@ -1,112 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, Mail, Phone, CreditCard, User, Calendar, FileText, AlertCircle, CheckCircle, Clock, TrendingUp, BarChart3 } from 'lucide-react';
 
 export default function MNADashboard() {
-  const [complaints, setComplaints] = useState([
-    {
-      id: 1,
-      name: 'Ahmed Ali',
-      email: 'ahmed@example.com',
-      phone: '+92 300 1234567',
-      cnic: '42101-1234567-1',
-      location: 'Karachi, Sindh - Gulshan-e-Iqbal',
-      constituency: 'NA-245',
-      complaint: 'Street lights not working in our area for the past 2 weeks. This is causing safety issues for residents especially women and children.',
-      image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400',
-      date: '2025-10-28',
-      status: 'Pending',
-      priority: 'High'
-    },
-    {
-      id: 2,
-      name: 'Fatima Khan',
-      email: 'fatima@example.com',
-      phone: '+92 321 9876543',
-      cnic: '42201-7654321-2',
-      location: 'Karachi, Sindh - Korangi',
-      constituency: 'NA-245',
-      complaint: 'Garbage collection not done regularly. Waste is piling up and creating health hazards in our neighborhood.',
-      image: 'https://images.unsplash.com/photo-1604187351574-c75ca79f5807?w=400',
-      date: '2025-10-27',
-      status: 'In Progress',
-      priority: 'Medium'
-    },
-    {
-      id: 3,
-      name: 'Ali Raza',
-      email: 'ali@example.com',
-      phone: '+92 333 5551234',
-      cnic: '42301-9876543-3',
-      location: 'Karachi, Sindh - Malir',
-      constituency: 'NA-245',
-      complaint: 'Water supply issues in our area. No water for 3 days straight. Community is facing severe difficulties.',
-      image: null,
-      date: '2025-10-26',
-      status: 'Resolved',
-      priority: 'High'
-    },
-    {
-      id: 4,
-      name: 'Sara Ahmed',
-      email: 'sara@example.com',
-      phone: '+92 301 4447777',
-      cnic: '42401-3456789-4',
-      location: 'Karachi, Sindh - Landhi',
-      constituency: 'NA-245',
-      complaint: 'Road damaged with multiple potholes causing accidents. Several vehicles damaged. Urgent repair needed.',
-      image: 'https://images.unsplash.com/photo-1625244724120-1fd1d34d00f6?w=400',
-      date: '2025-10-25',
-      status: 'Pending',
-      priority: 'High'
-    },
-    {
-      id: 5,
-      name: 'Hassan Mahmood',
-      email: 'hassan@example.com',
-      phone: '+92 315 8889999',
-      cnic: '42501-1112223-5',
-      location: 'Karachi, Sindh - Gulistan-e-Johar',
-      constituency: 'NA-245',
-      complaint: 'Drainage system blocked causing flooding during rain. Water enters homes causing property damage.',
-      image: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=400',
-      date: '2025-10-24',
-      status: 'In Progress',
-      priority: 'High'
-    },
-    {
-      id: 6,
-      name: 'Ayesha Siddiqui',
-      email: 'ayesha@example.com',
-      phone: '+92 322 3334444',
-      cnic: '42601-5556667-6',
-      location: 'Karachi, Sindh - Shah Faisal',
-      constituency: 'NA-245',
-      complaint: 'Public park in poor condition. Children have no safe place to play. Equipment broken and dangerous.',
-      image: null,
-      date: '2025-10-23',
-      status: 'Pending',
-      priority: 'Low'
-    }
-  ]);
-
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterPriority, setFilterPriority] = useState('All');
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
-  const updateStatus = (id, newStatus) => {
-    setComplaints(complaints.map(c => 
-      c.id === id ? { ...c, status: newStatus } : c
-    ));
-    if (selectedComplaint?.id === id) {
-      setSelectedComplaint({ ...selectedComplaint, status: newStatus });
+  // ✅ Fetch all complaints from backend
+  useEffect(() => {
+    const fetchComplaints = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/complaints/status");
+        const data = await res.json();
+        setComplaints(data.complaints || []);
+      } catch (err) {
+        console.error("Error fetching complaints:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchComplaints();
+  }, []);
+
+  // ✅ Update complaint status (send PUT to backend)
+  const updateStatus = async (id, newStatus) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/complaint/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: id, status: newStatus }),
+      });
+      
+      if (res.ok) {
+        setComplaints(complaints.map(c => 
+          c.id === id ? { ...c, status: newStatus } : c
+        ));
+        if (selectedComplaint?.id === id) {
+          setSelectedComplaint({ ...selectedComplaint, status: newStatus });
+        }
+      }
+    } catch (err) {
+      console.error("Error updating status:", err);
     }
   };
 
   const filteredComplaints = complaints.filter(complaint => {
-    const matchesSearch = complaint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         complaint.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         complaint.complaint.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = complaint.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         complaint.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         complaint.complaintDetails?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'All' || complaint.status === filterStatus;
     const matchesPriority = filterPriority === 'All' || complaint.priority === filterPriority;
     return matchesSearch && matchesStatus && matchesPriority;
@@ -136,6 +82,17 @@ export default function MNADashboard() {
       default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Clock className="w-16 h-16 mx-auto text-green-500 mb-4 animate-spin" />
+          <p className="text-gray-600 text-lg">Loading complaints...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -268,19 +225,21 @@ export default function MNADashboard() {
               >
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900">{complaint.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900">{complaint.fullName}</h3>
                     <div className="flex items-center text-sm text-gray-600 mt-1">
                       <Calendar className="w-4 h-4 mr-1" />
-                      {complaint.date}
+                      {new Date(complaint.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 items-end">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(complaint.status)}`}>
                       {complaint.status}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(complaint.priority)}`}>
-                      {complaint.priority}
-                    </span>
+                    {complaint.priority && (
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(complaint.priority)}`}>
+                        {complaint.priority}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -290,7 +249,7 @@ export default function MNADashboard() {
                 </div>
 
                 <p className="text-sm text-gray-700 line-clamp-2 bg-gray-50 p-3 rounded-lg">
-                  {complaint.complaint}
+                  {complaint.complaintDetails}
                 </p>
               </div>
             ))}
@@ -318,7 +277,7 @@ export default function MNADashboard() {
                       <div className="flex items-center text-sm">
                         <User className="w-4 h-4 mr-2 text-green-500" />
                         <span className="font-medium text-gray-700 w-24">Name:</span>
-                        <span className="text-gray-900">{selectedComplaint.name}</span>
+                        <span className="text-gray-900">{selectedComplaint.fullName}</span>
                       </div>
                       <div className="flex items-center text-sm">
                         <Mail className="w-4 h-4 mr-2 text-green-500" />
@@ -330,16 +289,25 @@ export default function MNADashboard() {
                         <span className="font-medium text-gray-700 w-24">Phone:</span>
                         <span className="text-gray-900">{selectedComplaint.phone}</span>
                       </div>
-                      <div className="flex items-center text-sm">
-                        <CreditCard className="w-4 h-4 mr-2 text-green-500" />
-                        <span className="font-medium text-gray-700 w-24">CNIC:</span>
-                        <span className="text-gray-900">{selectedComplaint.cnic}</span>
-                      </div>
+                      {selectedComplaint.cnic && (
+                        <div className="flex items-center text-sm">
+                          <CreditCard className="w-4 h-4 mr-2 text-green-500" />
+                          <span className="font-medium text-gray-700 w-24">CNIC:</span>
+                          <span className="text-gray-900">{selectedComplaint.cnic}</span>
+                        </div>
+                      )}
                       <div className="flex items-center text-sm">
                         <MapPin className="w-4 h-4 mr-2 text-green-500" />
                         <span className="font-medium text-gray-700 w-24">Location:</span>
                         <span className="text-gray-900">{selectedComplaint.location}</span>
                       </div>
+                      {selectedComplaint.chairman && (
+                        <div className="flex items-center text-sm">
+                          <User className="w-4 h-4 mr-2 text-green-500" />
+                          <span className="font-medium text-gray-700 w-24">Chairman:</span>
+                          <span className="text-gray-900">{selectedComplaint.chairman}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -347,7 +315,7 @@ export default function MNADashboard() {
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3">Complaint Description</h3>
                     <p className="text-gray-700 bg-gray-50 p-4 rounded-lg text-sm leading-relaxed">
-                      {selectedComplaint.complaint}
+                      {selectedComplaint.complaintDetails}
                     </p>
                   </div>
 
@@ -392,7 +360,7 @@ export default function MNADashboard() {
                   </div>
 
                   <div className="text-xs text-gray-500 text-center pt-4 border-t">
-                    ID: #{selectedComplaint.id} • Submitted on {selectedComplaint.date}
+                    ID: #{selectedComplaint.id} • Submitted on {new Date(selectedComplaint.createdAt).toLocaleDateString()}
                   </div>
                 </div>
               </div>

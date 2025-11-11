@@ -1,16 +1,26 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const auth = require('./routes/auth');
+import express from 'express';
+import dotenv from 'dotenv';
+import authRouter from './routes/auth.route.js';
+import { connectDb } from './services/Db.js';
+import Complaint from "./routes/complaint.route.js";
+import Leaderboard from "./routes/leaderboard.route.js";
+import cors from 'cors';
 
 dotenv.config();
-const app = express();
-app.use(express.json());
-app.use('/api/auth',auth);
 
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB is Connected'))
-    .catch(err => console.log('DB connect nhi ho rha',err));
+const app = express();
+app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(express.json());
+
+app.use('/api/auth', authRouter);
+//complaint routes
+app.use('/api', Complaint);
+app.use('/api', Leaderboard);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+
+connectDb();
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
