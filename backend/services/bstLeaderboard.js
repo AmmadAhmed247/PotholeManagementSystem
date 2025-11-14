@@ -48,7 +48,7 @@ export class LeaderboardBST {
     const node = this.userMap.get(userId);
     this.remove(node);
 
-    // Update counts based on status change
+
     if (oldStatus === 'Pending' && newStatus === 'Resolved') {
       node.pendingComplaints -= 1;
       node.resolvedComplaints += 1;

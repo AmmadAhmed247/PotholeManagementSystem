@@ -23,11 +23,8 @@ export const submitComplaint = (req, res) => {
     status: 'Pending',
     createdAt: new Date()
   };
-
   complaintsMap.set(id, complaint);
   complaintsList.addComplaint({ ...complaint });
-  
-  // ✅ Add to leaderboard with user data
   leaderboard.addComplaint(email, {
     name: fullName,
     joinedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })

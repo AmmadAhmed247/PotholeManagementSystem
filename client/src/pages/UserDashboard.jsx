@@ -1,147 +1,129 @@
-import React, { useState } from 'react';
-import { User, MapPin, Calendar, FileText, Image, Trash2, Edit, Plus, TrendingUp, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import {
+  User,
+  MapPin,
+  Calendar,
+  FileText,
+  Image,
+  Trash2,
+  Edit,
+  Plus,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import axios from "axios";
 
 export default function UserDashboard() {
   const [user] = useState({
-    name: 'Ahmed Ali',
-    email: 'ahmed@example.com',
-    phone: '+92 300 1234567',
-    joinDate: '2025-01-15'
-  });
-
-  const [complaints, setComplaints] = useState([
-    {
-      id: 1,
-      location: 'Karachi, Sindh - Block 5, Gulshan',
-      complaint: 'Street lights not working in our area for the past 2 weeks. This is causing safety issues for residents especially at night.',
-      image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400',
-      date: '2025-10-28',
-      status: 'Pending'
-    },
-    {
-      id: 2,
-      location: 'Karachi, Sindh - Defence Phase 8',
-      complaint: 'Large pothole on main road causing accidents. Multiple vehicles damaged. Urgent repair needed.',
-      image: 'https://images.unsplash.com/photo-1625244724120-1fd1d34d00f6?w=400',
-      date: '2025-10-25',
-      status: 'In Progress'
-    },
-    {
-      id: 3,
-      location: 'Karachi, Sindh - Clifton Block 2',
-      complaint: 'Water leakage from underground pipe. Road flooding causing traffic issues.',
-      image: null,
-      date: '2025-10-20',
-      status: 'Resolved'
-    },
-    {
-      id: 4,
-      location: 'Karachi, Sindh - North Nazimabad',
-      complaint: 'Broken traffic signal at main intersection. Creating dangerous situation for commuters.',
-      image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400',
-      date: '2025-10-18',
-      status: 'Resolved'
-    }
-  ]);
-
+  name: "Ammad Ahmed",
+  email: "ammadwork123@gmail.com",
+  phone: "+92 300 1234567",
+  joinDate: "2025-01-15",
+}); // fetch real user info
+  const [complaints, setComplaints] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'In Progress': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'Resolved': return 'bg-green-100 text-green-800 border-green-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+  // Fetch user info and complaints
+  useEffect(() => {
+  const fetchComplaints = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/complaints/user", {
+        params: { email: user.email }
+      });
+      const normalized = res.data.complaints.map(c => ({
+        id: c.id,
+        status: c.status,
+        complaint: c.complaintDetails,
+        date: new Date(c.createdAt).toLocaleDateString(),
+        location: c.location,
+        image: c.image || null
+      }));
+      setComplaints(normalized);
+    } catch (err) {
+      console.error("Failed to fetch complaints:", err);
     }
   };
+  fetchComplaints();
+}, [user.email]);
 
-  const getStatusIcon = (status) => {
-    switch(status) {
-      case 'Pending': return <Clock className="w-4 h-4" />;
-      case 'In Progress': return <TrendingUp className="w-4 h-4" />;
-      case 'Resolved': return <CheckCircle className="w-4 h-4" />;
-      default: return <AlertCircle className="w-4 h-4" />;
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this complaint?")) return;
+
+    try {
+      await axios.delete(`http://localhost:5000/api/complaints/${id}`);
+      setComplaints((prev) => prev.filter((c) => c.id !== id));
+      setSelectedComplaint(null);
+    } catch (err) {
+      console.error("Failed to delete complaint:", err);
     }
   };
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "In Progress":
+        return "bg-blue-100 text-blue-800 border-blue-300";
+      case "Resolved":
+        return "bg-green-100 text-green-800 border-green-300";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-300";
+    }
+  };
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Pending":
+        return <Clock className="w-4 h-4" />;
+      case "In Progress":
+        return <TrendingUp className="w-4 h-4" />;
+      case "Resolved":
+        return <CheckCircle className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+  if (!user) return <div className="text-center py-20">Loading user info...</div>;
 
   const stats = {
     total: complaints.length,
-    pending: complaints.filter(c => c.status === 'Pending').length,
-    inProgress: complaints.filter(c => c.status === 'In Progress').length,
-    resolved: complaints.filter(c => c.status === 'Resolved').length
+    pending: complaints.filter((c) => c.status === "Pending").length,
+    inProgress: complaints.filter((c) => c.status === "In Progress").length,
+    resolved: complaints.filter((c) => c.status === "Resolved").length,
   };
-
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this complaint?')) {
-      setComplaints(complaints.filter(c => c.id !== id));
-      setSelectedComplaint(null);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">{user.name}</h1>
-                <p className="text-gray-600">{user.email}</p>
-                <p className="text-sm text-gray-500">Member since {user.joinDate}</p>
-              </div>
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+              <User className="w-8 h-8 text-white" />
             </div>
-            <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 shadow-lg hover:shadow-xl">
-              <Plus className="w-5 h-5" />
-              New Complaint
-            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">{user.name}</h1>
+              <p className="text-gray-600">{user.email}</p>
+              <p className="text-sm text-gray-500">
+                Member since {new Date(user.joinDate).toLocaleDateString()}
+              </p>
+            </div>
           </div>
+          <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 shadow-lg hover:shadow-xl">
+            <Plus className="w-5 h-5" />
+            New Complaint
+          </button>
         </div>
 
-        {/* Stats Section */}
+        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-semibold">Total</p>
-                <p className="text-3xl font-bold text-gray-800">{stats.total}</p>
-              </div>
-              <FileText className="w-10 h-10 text-green-500" />
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-semibold">Pending</p>
-                <p className="text-3xl font-bold text-gray-800">{stats.pending}</p>
-              </div>
-              <Clock className="w-10 h-10 text-yellow-500" />
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-semibold">In Progress</p>
-                <p className="text-3xl font-bold text-gray-800">{stats.inProgress}</p>
-              </div>
-              <TrendingUp className="w-10 h-10 text-blue-500" />
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-600">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-semibold">Resolved</p>
-                <p className="text-3xl font-bold text-gray-800">{stats.resolved}</p>
-              </div>
-              <CheckCircle className="w-10 h-10 text-green-600" />
-            </div>
-          </div>
+          <StatCard title="Total" value={stats.total} icon={<FileText className="w-10 h-10 text-green-500" />} border="border-green-500" />
+          <StatCard title="Pending" value={stats.pending} icon={<Clock className="w-10 h-10 text-yellow-500" />} border="border-yellow-500" />
+          <StatCard title="In Progress" value={stats.inProgress} icon={<TrendingUp className="w-10 h-10 text-blue-500" />} border="border-blue-500" />
+          <StatCard title="Resolved" value={stats.resolved} icon={<CheckCircle className="w-10 h-10 text-green-600" />} border="border-green-600" />
         </div>
 
-        {/* Main Content */}
+        {/* Complaints List */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-green-500 px-6 py-4">
             <h2 className="text-2xl font-bold text-white">My Complaints</h2>
@@ -157,63 +139,50 @@ export default function UserDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {complaints.map(complaint => (
-                  <div 
-                    key={complaint.id}
+                {complaints.map((c) => (
+                  <div
+                    key={c.id}
                     className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-green-500 transition cursor-pointer"
-                    onClick={() => setSelectedComplaint(selectedComplaint?.id === complaint.id ? null : complaint)}
+                    onClick={() => setSelectedComplaint(selectedComplaint?.id === c.id ? null : c)}
                   >
                     <div className="p-5 bg-white">
                       <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2 flex-wrap">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1 ${getStatusColor(complaint.status)}`}>
-                              {getStatusIcon(complaint.status)}
-                              {complaint.status}
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1 ${getStatusColor(c.status)}`}>
+                              {getStatusIcon(c.status)}{c.status}
                             </span>
                             <div className="flex items-center text-gray-600 text-sm">
                               <Calendar className="w-4 h-4 mr-1 text-green-500" />
-                              {complaint.date}
+                              {c.date}
                             </div>
                           </div>
                           <div className="flex items-start text-gray-700 mb-2">
                             <MapPin className="w-4 h-4 mr-2 text-green-500 flex-shrink-0 mt-1" />
-                            <span className="font-semibold">{complaint.location}</span>
+                            <span className="font-semibold">{c.location}</span>
                           </div>
-                          <p className="text-gray-600 ml-6 line-clamp-2">{complaint.complaint}</p>
+                          <p className="text-gray-600 ml-6 line-clamp-2">{c.complaint}</p>
                         </div>
-                        {complaint.image && (
-                          <img 
-                            src={complaint.image} 
-                            alt="Complaint" 
-                            className="w-24 h-24 object-cover rounded-lg shadow-md"
-                          />
-                        )}
+                        {c.image && <img src={c.image} alt="Complaint" className="w-24 h-24 object-cover rounded-lg shadow-md" />}
                       </div>
 
-                      {selectedComplaint?.id === complaint.id && (
+                      {selectedComplaint?.id === c.id && (
                         <div className="mt-6 pt-6 border-t-2 border-gray-100">
                           <div className="mb-4">
                             <label className="flex items-center text-gray-700 font-semibold text-sm mb-2">
                               <FileText className="w-4 h-4 mr-2 text-green-500" />
                               Full Complaint Details
                             </label>
-                            <p className="text-gray-600 bg-gray-50 p-4 rounded-lg">
-                              {complaint.complaint}
-                            </p>
+                            <p className="text-gray-600 bg-gray-50 p-4 rounded-lg">{c.complaint}</p>
                           </div>
 
-                          {complaint.image && (
+                          {c.image && (
                             <div className="mb-4">
                               <label className="flex items-center text-gray-700 font-semibold text-sm mb-2">
                                 <Image className="w-4 h-4 mr-2 text-green-500" />
                                 Attached Image
                               </label>
-                              <img 
-                                src={complaint.image} 
-                                alt="Complaint" 
-                                className="w-full max-h-80 object-cover rounded-lg shadow-md"
-                              />
+                              <img src={c.image} alt="Complaint" className="w-full max-h-80 object-cover rounded-lg shadow-md" />
                             </div>
                           )}
 
@@ -222,13 +191,8 @@ export default function UserDashboard() {
                               <Edit className="w-4 h-4" />
                               Edit
                             </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(complaint.id);
-                              }}
-                              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition flex items-center justify-center gap-2 font-semibold"
-                            >
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}
+                              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition flex items-center justify-center gap-2 font-semibold">
                               <Trash2 className="w-4 h-4" />
                               Delete
                             </button>
@@ -242,6 +206,20 @@ export default function UserDashboard() {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value, icon, border }) {
+  return (
+    <div className={`bg-white rounded-xl shadow-lg p-6 border-l-4 ${border}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-gray-600 text-sm font-semibold">{title}</p>
+          <p className="text-3xl font-bold text-gray-800">{value}</p>
+        </div>
+        {icon}
       </div>
     </div>
   );
