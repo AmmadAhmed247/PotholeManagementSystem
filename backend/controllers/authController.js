@@ -70,7 +70,7 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Search tree first (O(log n) vs O(n) database query)
+    // Search tree first (O(log n) vs O(n) )
     let userData = userTree.search(email);
     
     let user;

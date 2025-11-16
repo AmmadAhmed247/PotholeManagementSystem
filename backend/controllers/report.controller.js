@@ -49,7 +49,7 @@ export const updateComplaintStatus = (req, res) => {
   const success = complaintsList.updateStatus(id, status);
   if (!success) return res.status(404).json({ message: 'Complaint not found' });
 
-  // ✅ Update leaderboard status counts
+  // Update leaderboard status counts
   leaderboard.updateComplaintStatus(userEmail, status, oldStatus);
 
   res.json({ message: 'Status updated', complaint: complaintsList.map.get(id).complaint });
