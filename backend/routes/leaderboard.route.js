@@ -1,12 +1,13 @@
 import express from 'express';
 import { addComplaint, getLeaderboard } from '../controllers/leaderboard.controller.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Add complaint (increments user count)
-router.post('/leaderboard/complaint', addComplaint);
+// Only logged-in users can add complaint
+router.post('/leaderboard/complaint', authMiddleware, addComplaint);
 
-// Get top 10 users
+// Anyone can view leaderboard
 router.get('/leaderboard', getLeaderboard);
 
 export default router;
