@@ -1,21 +1,54 @@
-// controllers/report.controller.js
+
 import Complaint from '../models/Complaint.js';
 import { complaintsList } from '../services/dllComplaints.js';
 import { leaderboard } from './leaderboard.controller.js';
-import { undoStack, redoStack } from '../services/stackStatus.js'; // optional undo/redo stacks
 
-// Submit a new complaint
+import User from '../models/User.js';
+
+
+export const getAllComplaintsStatus = async (req, res) => {
+  try {
+    const complaints = await Complaint.find()
+      .populate('user', 'name email mobile joinedDate')
+      .sort({ createdAt: -1 });
+
+    const formatted = complaints.map(c => ({
+      id: c._id.toString(),
+      title: c.title,
+      description: c.description,
+      location: c.location,
+      status: c.status,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+      user: c.user
+        ? {
+            name: c.user.name,
+            email: c.user.email,
+            mobile: c.user.mobile,
+            joinedDate: c.user.joinedDate ? new Date(c.user.joinedDate).toLocaleDateString() : "N/A"
+          }
+        : null 
+    }));
+
+    console.log(formatted);
+    res.json({ complaints: formatted });
+  } catch (err) {
+    console.error('Error fetching complaints:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const submitComplaint = async (req, res) => {
   try {
     const { title, description, location } = req.body;
 
-    if (!title || !description) {
-      return res.status(400).json({ message: 'Required fields missing' });
-    }
+    // if (!title || !description) {
+    //   return res.status(400).json({ message: 'Required fields missing' });
+    // }
 
-    // Save complaint permanently in MongoDB
+    // Save complaintin MongoDB
     const complaint = new Complaint({
-      user: req.user._id, // from authMiddleware
+      user: req.user._id, 
       title,
       description,
       location
@@ -37,11 +70,7 @@ export const submitComplaint = async (req, res) => {
       createdAt: complaint.createdAt
     });
 
-    // Update leaderboard BST
-    leaderboard.addComplaint(req.user.email, {
-      name: req.user.name,
-      joinedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    });
+    leaderboard.addComplaint(req.user.email, req.user.name);
 
     res.status(201).json({ message: 'Complaint submitted', complaint });
   } catch (err) {
@@ -54,28 +83,14 @@ export const submitComplaint = async (req, res) => {
 export const updateComplaintStatus = async (req, res) => {
   try {
     const { id, status } = req.body;
-
     if (!id || !status) return res.status(400).json({ message: 'Missing fields' });
 
-    // Fetch complaint from MongoDB
     const complaint = await Complaint.findById(id);
     if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
 
-    const oldStatus = complaint.status;
-
-    // Update status in MongoDB
     complaint.status = status;
     complaint.updatedAt = new Date();
     await complaint.save();
-
-    // Update status in DLL
-    complaintsList.updateStatus(id, status);
-
-    // Update leaderboard status counts
-    leaderboard.updateComplaintStatus(req.user.email, status, oldStatus);
-
-    // Push to undo stack for admin (optional)
-    undoStack.push({ id, oldStatus, newStatus: status });
 
     res.json({ message: 'Status updated', complaint });
   } catch (err) {
@@ -83,6 +98,8 @@ export const updateComplaintStatus = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+
 
 // Get all complaints (for admin)
 export const getAllComplaintsForAdmin = async (req, res) => {
@@ -96,15 +113,17 @@ export const getAllComplaintsForAdmin = async (req, res) => {
 };
 
 // Get logged-in user's complaints
+
 export const getUserComplaints = async (req, res) => {
   try {
-    const complaints = await Complaint.find({ user: req.user._id });
+    const complaints = await Complaint.find({ user: req.user._id }).populate('user', 'name email mobile joinDate');
     res.json({ complaints });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 // Undo last status change (admin)
 export const undoStatus = async (req, res) => {
@@ -120,7 +139,6 @@ export const undoStatus = async (req, res) => {
     complaint.updatedAt = new Date();
     await complaint.save();
 
-    // Update DLL
     complaintsList.updateStatus(id, oldStatus);
 
     // Update leaderboard

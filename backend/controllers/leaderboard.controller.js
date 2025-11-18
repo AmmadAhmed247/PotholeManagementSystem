@@ -3,7 +3,7 @@ import { LeaderboardBST } from '../services/bstLeaderboard.js';
 import User from '../models/User.js';
 import Complaint from '../models/Complaint.js';
 
-// shared in-memory leaderboard
+
 export const leaderboard = new LeaderboardBST();
 
 /**

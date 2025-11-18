@@ -27,13 +27,24 @@ const ComplaintMap = () => {
     fetchComplaints();
   }, []);
 
+  // Helper to attach Authorization header when token exists
+  const getAuthHeaders = (withJson = true) => {
+    const token = localStorage.getItem('token');
+    const base = {};
+    if (withJson) base['Content-Type'] = 'application/json';
+    if (token) base['Authorization'] = `Bearer ${token}`;
+    return base;
+  };
+
   const fetchComplaints = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/complaints/status");
+      const res = await fetch("http://localhost:5000/api/complaints/status", { headers: getAuthHeaders(false) });
       const data = await res.json();
       const complaintsData = data.complaints || [];
       setComplaints(complaintsData);
+      console.log(complaintsData);
+      
       
       const locationMap = {};
       complaintsData.forEach(complaint => {
@@ -81,32 +92,33 @@ const ComplaintMap = () => {
     }
   };
 
-  const updateStatus = async (id, newStatus) => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/complaint/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: newStatus }),
-      });
-      
-      if (res.ok) {
-        await fetchComplaints();
-        alert(`Status updated to ${newStatus}!`);
-      } else {
-        const error = await res.json();
-        alert('Failed to update: ' + (error.message || 'Unknown error'));
-      }
-    } catch (err) {
-      console.error("Error updating status:", err);
-      alert('Error: ' + err.message);
+  const updateStatus = async (complaintId, newStatus) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/complaint/status`, {
+      method: "PUT",
+      headers: getAuthHeaders(true),
+      body: JSON.stringify({ id: complaintId, status: newStatus }),
+    });
+
+    if (res.ok) {
+      await fetchComplaints();
+      alert(`Status updated to ${newStatus}!`);
+    } else {
+      const error = await res.json();
+      alert('Failed to update: ' + (error.message || 'Unknown error'));
     }
-  };
+  } catch (err) {
+    console.error("Error updating status:", err);
+    alert('Error: ' + err.message);
+  }
+};
+
 
   const undoStatusChange = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/complaint/undo', {
         method: 'POST'
-      });
+      , headers: getAuthHeaders(true) });
       if (res.ok) {
         await fetchComplaints();
         alert('Undo successful!');
@@ -119,8 +131,7 @@ const ComplaintMap = () => {
   const redoStatusChange = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/complaint/redo', {
-        method: 'POST'
-      });
+        method: 'POST', headers: getAuthHeaders(true) });
       if (res.ok) {
         await fetchComplaints();
         alert('Redo successful!');
@@ -216,7 +227,7 @@ const ComplaintMap = () => {
 
       const response = await fetch('http://localhost:5000/api/complaint', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify(complaintData)
       });
       
@@ -224,7 +235,7 @@ const ComplaintMap = () => {
         // Add to graph
         await fetch('http://localhost:5000/api/graph/add', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(true),
           body: JSON.stringify({ area: location, complaint: complaintData })
         });
         
@@ -546,7 +557,7 @@ const ComplaintMap = () => {
                   </div>
                   <p className="text-sm bg-gray-50 p-3 rounded mb-3">{complaint.complaintDetails}</p>
                   <div className="flex gap-2">
-                    <button onClick={() => updateStatus(complaint.id, 'Pending')} disabled={complaint.status === 'Pending'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 disabled:opacity-50">Pending</button>
+                    <button onClick={() => updateStatus(complaint.user?.email, 'Pending')} disabled={complaint.status === 'Pending'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 disabled:opacity-50">Pending</button>
                     <button onClick={() => updateStatus(complaint.id, 'In Progress')} disabled={complaint.status === 'In Progress'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50">In Progress</button>
                     <button onClick={() => updateStatus(complaint.id, 'Resolved')} disabled={complaint.status === 'Resolved'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 disabled:opacity-50">Resolved</button>
                   </div>

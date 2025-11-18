@@ -11,7 +11,6 @@ class UserTree {
   constructor() {
     this.root = null;
   }
-
   insert(email, userData) {
     const newNode = new UserNode(email, userData);
 
@@ -19,9 +18,7 @@ class UserTree {
       this.root = newNode;
       return;
     }
-
     let current = this.root;
-
     while (true) {
       if (email < current.email) {
         if (!current.left) {
@@ -45,7 +42,6 @@ class UserTree {
 
   search(email) {
     let current = this.root;
-
     while (current) {
       if (email === current.email) return current.userData;
       email < current.email

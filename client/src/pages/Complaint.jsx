@@ -33,22 +33,29 @@ export default function ComplaintForm() {
     }
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
 
   try {
     const payload = {
-      fullName: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      cnic: formData.cnic,
+      title: formData.name,
+      description: formData.complaint,
       location: formData.location,
-      chairman: formData.chairman,
-      complaintDetails: formData.complaint,
+      area: formData.chairman || '',
     };
 
-    await axios.post('http://localhost:5000/api/complaint', payload);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('You must be logged in to submit a complaint.');
+      return;
+    }
+
+    await axios.post('http://localhost:5000/api/complaint', payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -69,6 +76,7 @@ export default function ComplaintForm() {
     setError(err.response?.data?.message || 'Submission failed');
   }
 };
+
 
 
   if (submitted) {

@@ -11,7 +11,7 @@ class AreaNode {
 
 export class CityGraph {
   constructor() {
-    this.nodes = new Map(); // areaName -> AreaNode
+    this.nodes = new Map(); // areaName -> AreaNode gulshan=Dha
   }
 
   addComplaint(areaName, complaint) {
@@ -24,7 +24,6 @@ export class CityGraph {
   addEdge(area1, area2) {
     if (!this.nodes.has(area1)) this.nodes.set(area1, new AreaNode(area1));
     if (!this.nodes.has(area2)) this.nodes.set(area2, new AreaNode(area2));
-
     this.nodes.get(area1).adjacent.add(area2);
     this.nodes.get(area2).adjacent.add(area1);
   }

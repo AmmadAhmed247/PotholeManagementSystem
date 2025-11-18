@@ -1,19 +1,13 @@
-// complaintRoutes.js
 import express from 'express';
-import {
-  submitComplaint,
-  updateComplaintStatus,
-  getAllComplaintsStatus,
-  getAllComplaintsForAdmin,
-    getUserComplaints
-} from '../controllers/report.controller.js';
+import { submitComplaint, updateComplaintStatus, getAllComplaintsStatus, getAllComplaintsForAdmin, getUserComplaints } from '../controllers/report.controller.js';
+import { authMiddleware } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/complaint', submitComplaint); // existing submission
-router.put('/complaint/status', updateComplaintStatus); // update status
-router.get('/complaints/status', getAllComplaintsStatus); // get ordered complaints for admin
-router.get('/complaints/admin', getAllComplaintsForAdmin);
-router.get('/complaints/user', getUserComplaints);
+router.post('/complaint', authMiddleware, submitComplaint);
+router.put('/complaint/status', authMiddleware, updateComplaintStatus); // update status
+router.get('/complaints/status', authMiddleware, getAllComplaintsStatus); // get all complaints with status
+router.get('/complaints/admin', authMiddleware, getAllComplaintsForAdmin);
+router.get('/complaints/user', authMiddleware, getUserComplaints);
 
 export default router;

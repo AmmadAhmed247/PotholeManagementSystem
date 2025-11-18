@@ -5,19 +5,20 @@ const Leaderboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch leaderboard data from backend
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
         const res = await fetch("http://localhost:5000/api/leaderboard");
         const data = await res.json();
-        console.log("Leaderboard API Response:", data);
-        
-        // Backend returns { top: [...] }
         const leaderboardData = data.top || [];
-        console.log("Processed leaderboard data:", leaderboardData);
-        
-        setUsers(leaderboardData);
+
+        // Ensure joinedDate is always a string
+        const processedData = leaderboardData.map(u => ({
+          ...u,
+          joinedDate: u.joinedDate ? new Date(u.joinedDate).toLocaleDateString() : "N/A"
+        }));
+
+        setUsers(processedData);
       } catch (err) {
         console.error("Error fetching leaderboard:", err);
       } finally {
@@ -48,114 +49,14 @@ const Leaderboard = () => {
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
             Community Leaderboard
           </h1>
-          <p className="text-gray-600 text-lg">
-            Recognizing our top contributors
-          </p>
+          <p className="text-gray-600 text-lg">Recognizing our top contributors</p>
         </div>
 
         {/* Top 3 Podium */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* 2nd Place */}
-          {users[1] && (
-            <div className="order-1 md:order-1">
-              <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200 hover:shadow-xl transition-shadow">
-                <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-                    <Award className="w-10 h-10 text-gray-400" />
-                  </div>
-                </div>
-                <div className="text-center mb-4">
-                  <div className="text-3xl font-bold text-gray-400 mb-1">#2</div>
-                  <h3 className="text-xl font-bold text-gray-900">{users[1].name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">Since {users[1].joinedDate}</p>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Total Reports</span>
-                    <span className="text-lg font-bold text-green-500">{users[1].totalComplaints}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Resolved</span>
-                    <span className="text-lg font-semibold text-gray-900">{users[1].resolvedComplaints}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${getResolutionRate(users[1].resolvedComplaints, users[1].totalComplaints)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 1st Place */}
-          {users[0] && (
-            <div className="order-0 md:order-2">
-              <div className="bg-gradient-to-br from-green-400 to-green-500 rounded-2xl p-6 shadow-2xl border-2 border-green-300 transform md:scale-110 hover:shadow-3xl transition-all">
-                <div className="flex justify-center mb-4">
-                  <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-lg">
-                    <Trophy className="w-12 h-12 text-yellow-500" />
-                  </div>
-                </div>
-                <div className="text-center mb-4">
-                  <div className="text-4xl font-bold text-white mb-1">#1</div>
-                  <h3 className="text-2xl font-bold text-white">{users[0].name}</h3>
-                  <p className="text-sm text-white opacity-90 mt-1">Since {users[0].joinedDate}</p>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-white opacity-90">Total Reports</span>
-                    <span className="text-2xl font-bold text-white">{users[0].totalComplaints}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-white opacity-90">Resolved</span>
-                    <span className="text-xl font-semibold text-white">{users[0].resolvedComplaints}</span>
-                  </div>
-                  <div className="w-full bg-white bg-opacity-30 rounded-full h-2">
-                    <div 
-                      className="bg-white h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${getResolutionRate(users[0].resolvedComplaints, users[0].totalComplaints)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 3rd Place */}
-          {users[2] && (
-            <div className="order-2 md:order-3">
-              <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200 hover:shadow-xl transition-shadow">
-                <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center">
-                    <Medal className="w-10 h-10 text-orange-400" />
-                  </div>
-                </div>
-                <div className="text-center mb-4">
-                  <div className="text-3xl font-bold text-orange-400 mb-1">#3</div>
-                  <h3 className="text-xl font-bold text-gray-900">{users[2].name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">Since {users[2].joinedDate}</p>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Total Reports</span>
-                    <span className="text-lg font-bold text-green-500">{users[2].totalComplaints}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Resolved</span>
-                    <span className="text-lg font-semibold text-gray-900">{users[2].resolvedComplaints}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${getResolutionRate(users[2].resolvedComplaints, users[2].totalComplaints)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {users[1] && <PodiumCard user={users[1]} place={2} icon={<Award className="w-10 h-10 text-gray-400" />} />}
+          {users[0] && <PodiumCard user={users[0]} place={1} icon={<Trophy className="w-12 h-12 text-yellow-500" />} isFirst />}
+          {users[2] && <PodiumCard user={users[2]} place={3} icon={<Medal className="w-10 h-10 text-orange-400" />} />}
         </div>
 
         {/* Rest of Rankings */}
@@ -179,29 +80,9 @@ const Leaderboard = () => {
                   </div>
                   
                   <div className="flex items-center gap-6">
-                    <div className="text-center hidden md:block">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-green-500" />
-                        <span className="text-lg font-bold text-green-500">{user.totalComplaints}</span>
-                      </div>
-                      <div className="text-xs text-gray-500">Reports</div>
-                    </div>
-                    
-                    <div className="text-center hidden md:block">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-gray-600" />
-                        <span className="text-lg font-semibold text-gray-900">{user.resolvedComplaints}</span>
-                      </div>
-                      <div className="text-xs text-gray-500">Resolved</div>
-                    </div>
-                    
-                    <div className="text-center hidden md:block">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span className="text-lg font-medium text-gray-600">{user.pendingComplaints}</span>
-                      </div>
-                      <div className="text-xs text-gray-500">Pending</div>
-                    </div>
+                    <StatItem icon={<TrendingUp className="w-4 h-4 text-green-500" />} value={user.totalComplaints} label="Reports" />
+                    <StatItem icon={<CheckCircle className="w-4 h-4 text-gray-600" />} value={user.resolvedComplaints} label="Resolved" />
+                    <StatItem icon={<Clock className="w-4 h-4 text-gray-400" />} value={user.pendingComplaints} label="Pending" />
                   </div>
                 </div>
               ))}
@@ -216,5 +97,54 @@ const Leaderboard = () => {
     </div>
   );
 };
+
+// Top 3 Podium card component
+const PodiumCard = ({ user, place, icon, isFirst = false }) => {
+  return (
+    <div className={`order-${place} md:order-${place}`}>
+      <div className={`bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200 hover:shadow-xl transition-shadow ${isFirst ? "bg-gradient-to-br from-green-400 to-green-500 border-green-300 transform md:scale-110" : ""}`}>
+        <div className="flex justify-center mb-4">
+          <div className={`w-16 h-16 ${isFirst ? "w-20 h-20 bg-white shadow-lg" : "bg-gray-100"} rounded-full flex items-center justify-center`}>
+            {icon}
+          </div>
+        </div>
+        <div className="text-center mb-4">
+          <div className={`text-3xl font-bold ${isFirst ? "text-white" : "text-gray-400"} mb-1`}>#{place}</div>
+          <h3 className={`text-xl font-bold ${isFirst ? "text-white text-2xl" : "text-gray-900"}`}>{user.name}</h3>
+          <p className={`text-sm mt-1 ${isFirst ? "text-white opacity-90" : "text-gray-500"}`}>
+            Since {user.joinedDate}
+          </p>
+        </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className={`text-sm ${isFirst ? "text-white opacity-90" : "text-gray-600"}`}>Total Reports</span>
+            <span className={`${isFirst ? "text-2xl text-white" : "text-lg font-bold text-green-500"}`}>{user.totalComplaints}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className={`text-sm ${isFirst ? "text-white opacity-90" : "text-gray-600"}`}>Resolved</span>
+            <span className={`${isFirst ? "text-xl font-semibold text-white" : "text-lg font-semibold text-gray-900"}`}>{user.resolvedComplaints}</span>
+          </div>
+          <div className={`w-full ${isFirst ? "bg-white bg-opacity-30" : "bg-gray-200"} rounded-full h-2`}>
+            <div 
+              className={`${isFirst ? "bg-white" : "bg-green-500"} h-2 rounded-full transition-all duration-500`}
+              style={{ width: `${user.totalComplaints ? (user.resolvedComplaints / user.totalComplaints) * 100 : 0}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Stat item for other users
+const StatItem = ({ icon, value, label }) => (
+  <div className="text-center hidden md:block">
+    <div className="flex items-center gap-2">
+      {icon}
+      <span className="text-lg font-bold text-gray-900">{value}</span>
+    </div>
+    <div className="text-xs text-gray-500">{label}</div>
+  </div>
+);
 
 export default Leaderboard;

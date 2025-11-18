@@ -1,7 +1,9 @@
 
+
+
 class Node {
   constructor(complaint) {
-    this.complaint = complaint; // { id, fullName, email, status, ... } ye sab store hoga
+    this.complaint = complaint; // contain all user data
     this.prev = null;
     this.next = null;
   }
@@ -12,39 +14,32 @@ class Stack {
   constructor() {
     this.items = [];
   }
-
   push(element) {
     this.items.push(element);
   }
-
   pop() {
     return this.items.pop() || null;
   }
-
   peek() {
     return this.items[this.items.length - 1] || null;
   }
-
   isEmpty() {
     return this.items.length === 0;
   }
-
   clear() {
     this.items = [];
   }
 }
-
+// main DLL class  (fast add , complaints ko order , undo redo , map(0(1) access))
 export class ComplaintDLL {
-  constructor() {
+  constructor() { 
     this.head = null;
     this.tail = null;
     this.size = 0;
-    this.map = new Map(); // ordered map {key : val}
-
+    this.map = new Map(); 
     this.undoStack = new Stack();
     this.redoStack = new Stack();
   }
-
   addComplaint(complaint) {
     const node = new Node(complaint);
     if (!this.head) {
@@ -57,11 +52,11 @@ export class ComplaintDLL {
     this.size++;
     this.map.set(complaint.id, node);
   }
-
+  // means status change hota ha to ye sara old data sara save kr ly ga 
+  //RedoStack clear hota hai (normal undo/redo behaviour).
   updateStatus(id, newStatus) {
     const node = this.map.get(id);
     if (!node) return false;
-
     // Push previous status to undo stack
     this.undoStack.push({
       complaintId: id,
@@ -76,7 +71,7 @@ export class ComplaintDLL {
     return true;
   }
 
-  // Undo last status change
+  // Last status change wapis laata hai.  Pending → In Progress ||  In Progress → Pending  (revert)
   undo() {
     if (this.undoStack.isEmpty()) return false;
 
@@ -95,7 +90,7 @@ export class ComplaintDLL {
     return true;
   }
 
-  // Redo last undone change
+  // same here
   redo() {
     if (this.redoStack.isEmpty()) return false;
 
@@ -114,7 +109,6 @@ export class ComplaintDLL {
     return true;
   }
 
-  // Get all complaints as array
   getAllComplaints() {
     const result = [];
     let current = this.head;

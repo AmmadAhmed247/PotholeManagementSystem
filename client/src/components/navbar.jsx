@@ -2,13 +2,7 @@ import React, { useState, useEffect } from "react";
 import { MapPin, Menu, X, UserCircle, AlertCircle } from "lucide-react";
 import axios from "axios";
 
-// Configure axios base URL
-const api = axios.create({
-  baseURL: "http://localhost:5000/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import api from '../lib/api';
 
 const Navbar = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);

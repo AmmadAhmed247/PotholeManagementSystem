@@ -16,82 +16,97 @@ import {
 import axios from "axios";
 
 export default function UserDashboard() {
-  const [user] = useState({
-  name: "Ammad Ahmed",
-  email: "ammadwork123@gmail.com",
-  phone: "+92 300 1234567",
-  joinDate: "2025-01-15",
-}); // fetch real user info
+  const [user, setUser] = useState(null); 
   const [complaints, setComplaints] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
-  // Fetch user info and complaints
   useEffect(() => {
-  const fetchComplaints = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/complaints/user", {
-        params: { email: user.email }
-      });
-      const normalized = res.data.complaints.map(c => ({
-        id: c.id,
-        status: c.status,
-        complaint: c.complaintDetails,
-        date: new Date(c.createdAt).toLocaleDateString(),
-        location: c.location,
-        image: c.image || null
-      }));
-      setComplaints(normalized);
-    } catch (err) {
-      console.error("Failed to fetch complaints:", err);
-    }
-  };
-  fetchComplaints();
-}, [user.email]);
+    const fetchComplaints = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/complaints/user", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
 
+        const data = res.data.complaints.map(c => ({
+          id: c._id,
+          status: c.status,
+          complaint: c.description,
+          date: new Date(c.createdAt).toLocaleDateString(),
+          location: c.location,
+          image: c.image || null,
+          user: c.user, // in case populate needed
+        }));
+
+        setComplaints(data);
+
+        // Use first complaint's user info as logged-in user display
+        if (data.length > 0 && data[0].user) {
+          setUser({
+            name: data[0].user.name,
+            email: data[0].user.email,
+            phone: data[0].user.mobile,
+            joinDate: data[0].user.joinDate || data[0].date, // fallback
+          });
+        } else {
+          // Default user info if no complaints yet
+          setUser({
+            name: "Logged-in User",
+            email: "user@example.com",
+            phone: "+92 300 0000000",
+            joinDate: new Date().toISOString(),
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch complaints:", err);
+      }
+    };
+
+    fetchComplaints();
+  }, []);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this complaint?")) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/complaints/${id}`);
-      setComplaints((prev) => prev.filter((c) => c.id !== id));
+      await axios.delete(`http://localhost:5000/api/complaints/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setComplaints(prev => prev.filter(c => c.id !== id));
       setSelectedComplaint(null);
     } catch (err) {
       console.error("Failed to delete complaint:", err);
     }
   };
+
   const getStatusColor = (status) => {
     switch (status) {
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "In Progress":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "Resolved":
-        return "bg-green-100 text-green-800 border-green-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
+      case "Pending": return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "In Progress": return "bg-blue-100 text-blue-800 border-blue-300";
+      case "Resolved": return "bg-green-100 text-green-800 border-green-300";
+      default: return "bg-gray-100 text-gray-800 border-gray-300";
     }
   };
+
   const getStatusIcon = (status) => {
     switch (status) {
-      case "Pending":
-        return <Clock className="w-4 h-4" />;
-      case "In Progress":
-        return <TrendingUp className="w-4 h-4" />;
-      case "Resolved":
-        return <CheckCircle className="w-4 h-4" />;
-      default:
-        return <AlertCircle className="w-4 h-4" />;
+      case "Pending": return <Clock className="w-4 h-4" />;
+      case "In Progress": return <TrendingUp className="w-4 h-4" />;
+      case "Resolved": return <CheckCircle className="w-4 h-4" />;
+      default: return <AlertCircle className="w-4 h-4" />;
     }
   };
+
   if (!user) return <div className="text-center py-20">Loading user info...</div>;
 
   const stats = {
     total: complaints.length,
-    pending: complaints.filter((c) => c.status === "Pending").length,
-    inProgress: complaints.filter((c) => c.status === "In Progress").length,
-    resolved: complaints.filter((c) => c.status === "Resolved").length,
+    pending: complaints.filter(c => c.status === "Pending").length,
+    inProgress: complaints.filter(c => c.status === "In Progress").length,
+    resolved: complaints.filter(c => c.status === "Resolved").length,
   };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -104,9 +119,7 @@ export default function UserDashboard() {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">{user.name}</h1>
               <p className="text-gray-600">{user.email}</p>
-              <p className="text-sm text-gray-500">
-                Member since {new Date(user.joinDate).toLocaleDateString()}
-              </p>
+              <p className="text-sm text-gray-500">Member since {new Date(user.joinDate).toLocaleDateString()}</p>
             </div>
           </div>
           <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 shadow-lg hover:shadow-xl">
@@ -129,7 +142,6 @@ export default function UserDashboard() {
             <h2 className="text-2xl font-bold text-white">My Complaints</h2>
             <p className="text-green-50 text-sm">Track and manage all your submitted complaints</p>
           </div>
-
           <div className="p-6">
             {complaints.length === 0 ? (
               <div className="text-center py-12">
@@ -139,7 +151,7 @@ export default function UserDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {complaints.map((c) => (
+                {complaints.map(c => (
                   <div
                     key={c.id}
                     className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-green-500 transition cursor-pointer"
@@ -175,7 +187,6 @@ export default function UserDashboard() {
                             </label>
                             <p className="text-gray-600 bg-gray-50 p-4 rounded-lg">{c.complaint}</p>
                           </div>
-
                           {c.image && (
                             <div className="mb-4">
                               <label className="flex items-center text-gray-700 font-semibold text-sm mb-2">
@@ -185,18 +196,7 @@ export default function UserDashboard() {
                               <img src={c.image} alt="Complaint" className="w-full max-h-80 object-cover rounded-lg shadow-md" />
                             </div>
                           )}
-
-                          <div className="flex gap-3">
-                            <button className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition flex items-center justify-center gap-2 font-semibold">
-                              <Edit className="w-4 h-4" />
-                              Edit
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}
-                              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition flex items-center justify-center gap-2 font-semibold">
-                              <Trash2 className="w-4 h-4" />
-                              Delete
-                            </button>
-                          </div>
+                          
                         </div>
                       )}
                     </div>
