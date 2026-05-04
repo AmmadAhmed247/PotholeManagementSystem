@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import { QueryClient , QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Home from "./pages/Home.jsx"
 import About from './pages/About.jsx'
@@ -13,27 +13,29 @@ import Complaint from './pages/Complaint.jsx'
 import MnaDashboard from './pages/MnaDashboard.jsx'
 import UserDashboard from './pages/UserDashboard.jsx'
 
-const queryClient=new QueryClient();
+const queryClient = new QueryClient();
 
 
-const router=createBrowserRouter([
-  {path:"/",element:<MainLayout/>,
-    children:[
-      {path:"/",element:<Home/>},
-      {path:"/about",element:<About/>},
-      {path:"/leaderboard",element:<Leaderboard/>},
-      {path:"/complaints",element:<Complaint/>},
-      {path:"/mnadashboard",element:<MnaDashboard/>},
-      {path:"/usercomplaints",element:<UserDashboard/>},
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <MainLayout />,
+    children: [
+      { index: true, element: <Home /> },
+      { path: "about", element: <About /> },
+      { path: "leaderboard", element: <Leaderboard /> },
+      { path: "complaints", element: <Complaint /> },
+      { path: "admindashboard", element: <MnaDashboard /> },
+      { path: "usercomplaints", element: <UserDashboard /> },
     ]
   }
-])
+]);
 
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient} >
-      <RouterProvider router={router}  />
+      <RouterProvider router={router} />
     </QueryClientProvider >
   </StrictMode>,
 )

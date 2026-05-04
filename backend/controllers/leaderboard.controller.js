@@ -1,41 +1,47 @@
-// controllers/leaderboard.controller.js
+import { withConnection } from '../services/Db.js';
 import { LeaderboardBST } from '../services/bstLeaderboard.js';
-import User from '../models/User.js';
-import Complaint from '../models/Complaint.js';
-
 
 export const leaderboard = new LeaderboardBST();
 
-/**
- * Rebuild leaderboard from MongoDB on server start
- * This ensures counts persist even after a server restart
- */
 export const rebuildLeaderboard = async () => {
   try {
-    const users = await User.find();
-    for (const user of users) {
-      const count = await Complaint.countDocuments({ user: user._id });
-      leaderboard.setCount(user._id, user.name, count); // implement setCount in your BST
-    }
+    const result = await withConnection((conn) =>
+      conn.execute(
+        `SELECT RAWTOHEX(u.id) AS id,
+                u.name,
+                COUNT(c.id) AS complaint_count
+         FROM users u
+         LEFT JOIN complaints c ON c.user_id = u.id
+         GROUP BY u.id, u.name`
+      )
+    );
+
+    result.rows.forEach((row) => {
+      leaderboard.setCount(row.ID, row.NAME, Number(row.COMPLAINT_COUNT));
+    });
+
     console.log('Leaderboard rebuilt from DB');
   } catch (err) {
     console.error('Error rebuilding leaderboard:', err);
   }
 };
 
-// Call this function in your server.js or main file after DB connection
-// rebuildLeaderboard().catch(err => console.error(err));
-
-/**
- * Increment user's complaint count when a complaint is filed
- */
 export const addComplaint = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const userId = req.user.id;
 
-    leaderboard.addComplaint(userId, user.name);
+    const result = await withConnection((conn) =>
+      conn.execute(
+        `SELECT RAWTOHEX(id) AS id, name FROM users WHERE id = HEXTORAW(:userId)`,
+        { userId }
+      )
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: 'User not found' });
+
+    const user = result.rows[0];
+    leaderboard.addComplaint(user.ID, user.NAME);
 
     res.json({ message: 'Complaint added', top: leaderboard.topN(10) });
   } catch (err) {
@@ -44,9 +50,6 @@ export const addComplaint = async (req, res) => {
   }
 };
 
-/**
- * Get top N users from leaderboard
- */
 export const getLeaderboard = (req, res) => {
   res.json({ top: leaderboard.topN(10) });
 };

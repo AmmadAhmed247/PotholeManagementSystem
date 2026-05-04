@@ -86,7 +86,7 @@ export class LeaderboardBST {
     this.inOrderDesc(node.left, arr);
     return arr;
   }
-  // get top N users (10) 
+
   topN(n = 10) {
     return this.inOrderDesc().slice(0, n);
   }

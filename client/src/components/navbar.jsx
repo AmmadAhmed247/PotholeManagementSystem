@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { MapPin, Menu, X, UserCircle, AlertCircle } from "lucide-react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 import api from '../lib/api';
 
@@ -24,6 +25,8 @@ const Navbar = () => {
     confirmPassword: "",
     role: "user"
   });
+
+  const navigate = useNavigate();
 
   // Check if user is already logged in
   useEffect(() => {
@@ -50,6 +53,16 @@ const Navbar = () => {
         setUser(response.data.user);
         setShowAuthModal(false);
         setLoginData({ email: "", password: "" });
+
+
+        const role = response.data.user?.role?.toLowerCase();
+
+        if (role === "admin" || role === "super admin") {
+          navigate("/admindashboard");
+        } else {
+          navigate("/usercomplaints");
+        }
+
       }
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Please try again.");

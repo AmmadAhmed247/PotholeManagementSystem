@@ -1,17 +1,16 @@
-// services/graphComplaints.js
-import Complaint from '../models/Complaint.js';
+import { withConnection } from '../services/Db.js';
 
 class AreaNode {
   constructor(name) {
     this.name = name;
-    this.complaints = []; // complaints in this area
-    this.adjacent = new Set(); // connected areas
+    this.complaints = [];
+    this.adjacent = new Set();
   }
 }
 
 export class CityGraph {
   constructor() {
-    this.nodes = new Map(); // areaName -> AreaNode gulshan=Dha
+    this.nodes = new Map();
   }
 
   addComplaint(areaName, complaint) {
@@ -39,17 +38,12 @@ export class CityGraph {
       const area = queue.shift();
       if (!visited.has(area)) {
         visited.add(area);
-        cluster.push({
-          area,
-          complaints: this.nodes.get(area).complaints
-        });
-
+        cluster.push({ area, complaints: this.nodes.get(area).complaints });
         for (const neighbor of this.nodes.get(area).adjacent) {
           if (!visited.has(neighbor)) queue.push(neighbor);
         }
       }
     }
-
     return cluster;
   }
 
@@ -61,11 +55,7 @@ export class CityGraph {
 
     const dfs = (area) => {
       visited.add(area);
-      cluster.push({
-        area,
-        complaints: this.nodes.get(area).complaints
-      });
-
+      cluster.push({ area, complaints: this.nodes.get(area).complaints });
       for (const neighbor of this.nodes.get(area).adjacent) {
         if (!visited.has(neighbor)) dfs(neighbor);
       }
@@ -75,18 +65,31 @@ export class CityGraph {
     return cluster;
   }
 
-  // Rebuild graph from DB on server start
-  async rebuildGraphFromDB() {
-    const complaints = await Complaint.find();
-    complaints.forEach(c => {
-      this.addComplaint(c.area, c);
+ async rebuildGraphFromDB() {
+    const result = await withConnection((conn) =>
+      conn.execute(
+        `SELECT RAWTOHEX(id) AS id, RAWTOHEX(user_id) AS user_id,
+                title, description, location, area, status
+         FROM complaints
+         WHERE area IS NOT NULL`
+      )
+    );
+
+    // FIX: Destructure the rows to break the circular connection reference
+    (result.rows || []).forEach((row) => {
+      const cleanComplaint = {
+        id: String(row.ID),
+        userId: String(row.USER_ID),
+        title: row.TITLE,
+        description: row.DESCRIPTION,
+        location: row.LOCATION,
+        area: row.AREA,
+        status: row.STATUS
+      };
+      this.addComplaint(row.AREA, cleanComplaint);
     });
     console.log('Graph rebuilt from DB');
   }
 }
 
-// shared instance for all users
 export const cityGraph = new CityGraph();
-
-// Rebuild graph at server start
-cityGraph.rebuildGraphFromDB().catch(err => console.error('Error rebuilding graph:', err));

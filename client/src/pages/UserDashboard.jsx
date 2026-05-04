@@ -5,80 +5,61 @@ import {
   Calendar,
   FileText,
   Image,
-  Trash2,
-  Edit,
   Plus,
   TrendingUp,
   Clock,
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 
 export default function UserDashboard() {
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(null);
   const [complaints, setComplaints] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // 1. Get User from LocalStorage immediately (Fixes the hardcoded/fallback issue)
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Error parsing user from storage", e);
+      }
+    }
+
+    // 2. Fetch Complaints
     const fetchComplaints = async () => {
       try {
+        const token = localStorage.getItem("token");
+        console.log(token)
         const res = await axios.get("http://localhost:5000/api/complaints/user", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        const data = res.data.complaints.map(c => ({
-          id: c._id,
+        // Use the sanitized keys from your Oracle backend
+        const formattedData = (res.data.complaints || []).map((c) => ({
+          id: c.id,
           status: c.status,
           complaint: c.description,
-          date: new Date(c.createdAt).toLocaleDateString(),
+          date: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Recent",
           location: c.location,
           image: c.image || null,
-          user: c.user, // in case populate needed
         }));
 
-        setComplaints(data);
-
-        // Use first complaint's user info as logged-in user display
-        if (data.length > 0 && data[0].user) {
-          setUser({
-            name: data[0].user.name,
-            email: data[0].user.email,
-            phone: data[0].user.mobile,
-            joinDate: data[0].user.joinDate || data[0].date, // fallback
-          });
-        } else {
-          // Default user info if no complaints yet
-          setUser({
-            name: "Logged-in User",
-            email: "user@example.com",
-            phone: "+92 300 0000000",
-            joinDate: new Date().toISOString(),
-          });
-        }
+        setComplaints(formattedData);
       } catch (err) {
         console.error("Failed to fetch complaints:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchComplaints();
   }, []);
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this complaint?")) return;
-
-    try {
-      await axios.delete(`http://localhost:5000/api/complaints/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      setComplaints(prev => prev.filter(c => c.id !== id));
-      setSelectedComplaint(null);
-    } catch (err) {
-      console.error("Failed to delete complaint:", err);
-    }
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -98,7 +79,10 @@ export default function UserDashboard() {
     }
   };
 
-  if (!user) return <div className="text-center py-20">Loading user info...</div>;
+  if (loading) return <div className="text-center py-20 font-semibold text-green-600">Loading Dashboard...</div>;
+  
+  // If no user in localStorage and loading is done, they shouldn't be here
+  if (!user) return <div className="text-center py-20">Please log in to view your dashboard.</div>;
 
   const stats = {
     total: complaints.length,
@@ -110,7 +94,7 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header - Now using localStorage data */}
         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
@@ -119,16 +103,18 @@ export default function UserDashboard() {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">{user.name}</h1>
               <p className="text-gray-600">{user.email}</p>
-              <p className="text-sm text-gray-500">Member since {new Date(user.joinDate).toLocaleDateString()}</p>
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded uppercase tracking-wider">
+                {user.role}
+              </span>
             </div>
           </div>
-          <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 shadow-lg hover:shadow-xl">
+          <Link to="/complaints" className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 shadow-lg hover:shadow-xl">
             <Plus className="w-5 h-5" />
             New Complaint
-          </button>
+          </Link>
         </div>
 
-        {/* Stats */}
+        {/* Stats Section */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <StatCard title="Total" value={stats.total} icon={<FileText className="w-10 h-10 text-green-500" />} border="border-green-500" />
           <StatCard title="Pending" value={stats.pending} icon={<Clock className="w-10 h-10 text-yellow-500" />} border="border-yellow-500" />
@@ -140,14 +126,12 @@ export default function UserDashboard() {
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-green-500 px-6 py-4">
             <h2 className="text-2xl font-bold text-white">My Complaints</h2>
-            <p className="text-green-50 text-sm">Track and manage all your submitted complaints</p>
           </div>
           <div className="p-6">
             {complaints.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-600 text-lg font-semibold">No complaints yet</p>
-                <p className="text-gray-400 text-sm mt-2">Start by creating your first complaint</p>
+                <p className="text-gray-600 text-lg font-semibold">No complaints found</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -175,30 +159,7 @@ export default function UserDashboard() {
                           </div>
                           <p className="text-gray-600 ml-6 line-clamp-2">{c.complaint}</p>
                         </div>
-                        {c.image && <img src={c.image} alt="Complaint" className="w-24 h-24 object-cover rounded-lg shadow-md" />}
                       </div>
-
-                      {selectedComplaint?.id === c.id && (
-                        <div className="mt-6 pt-6 border-t-2 border-gray-100">
-                          <div className="mb-4">
-                            <label className="flex items-center text-gray-700 font-semibold text-sm mb-2">
-                              <FileText className="w-4 h-4 mr-2 text-green-500" />
-                              Full Complaint Details
-                            </label>
-                            <p className="text-gray-600 bg-gray-50 p-4 rounded-lg">{c.complaint}</p>
-                          </div>
-                          {c.image && (
-                            <div className="mb-4">
-                              <label className="flex items-center text-gray-700 font-semibold text-sm mb-2">
-                                <Image className="w-4 h-4 mr-2 text-green-500" />
-                                Attached Image
-                              </label>
-                              <img src={c.image} alt="Complaint" className="w-full max-h-80 object-cover rounded-lg shadow-md" />
-                            </div>
-                          )}
-                          
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}

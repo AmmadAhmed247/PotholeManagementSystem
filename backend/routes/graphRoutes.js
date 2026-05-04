@@ -1,6 +1,6 @@
-// routes/graphRoutes.js
+import oracledb from 'oracledb';
 import express from 'express';
-import Complaint from '../models/Complaint.js';
+import { withConnection } from '../services/Db.js';
 import { cityGraph } from '../services/graphComplaints.js';
 
 const router = express.Router();
@@ -10,20 +10,40 @@ router.post('/graph/add', async (req, res) => {
   try {
     const { area, title, description, userEmail } = req.body;
 
-    if (!area || !title || !description || !userEmail) {
+    if (!area || !title || !description || !userEmail)
       return res.status(400).json({ message: 'Area, title, description, and userEmail required' });
-    }
 
-    // Save complaint to DB
-    const complaint = await Complaint.create({
-      user: userEmail, // or userId if you store ObjectId
-      title,
-      description,
-      location: area,
-      status: 'Pending'
-    });
+    // Look up user id from email
+    const userResult = await withConnection((conn) =>
+      conn.execute(
+        `SELECT RAWTOHEX(id) AS id FROM users WHERE email = :email`,
+        { email: userEmail }
+      )
+    );
 
-    // Add complaint to graph
+    if (userResult.rows.length === 0)
+      return res.status(404).json({ message: 'User not found' });
+
+    const userId = userResult.rows[0].ID;
+
+    const result = await withConnection((conn) =>
+      conn.execute(
+        `INSERT INTO complaints (user_id, title, description, location, area, status)
+         VALUES (HEXTORAW(:userId), :title, :description, :area, :area, 'Pending')
+         RETURNING RAWTOHEX(id) INTO :id`,
+        {
+          userId,
+          title,
+          description,
+          area,
+          id: { dir: oracledb.BIND_OUT, type: oracledb.STRING },
+        },
+        { autoCommit: true }
+      )
+    );
+
+    const complaint = { id: result.outBinds.id[0], userId, title, description, area, status: 'Pending' };
+
     cityGraph.addComplaint(area, complaint);
 
     res.status(201).json({ message: 'Complaint added to graph', complaint });

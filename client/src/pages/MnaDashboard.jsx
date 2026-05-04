@@ -12,8 +12,8 @@ const ComplaintMap = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
-  const [newComplaint, setNewComplaint] = useState({ 
-    area: '', 
+  const [newComplaint, setNewComplaint] = useState({
+    area: '',
     fullName: '',
     email: '',
     phone: '',
@@ -43,9 +43,7 @@ const ComplaintMap = () => {
       const data = await res.json();
       const complaintsData = data.complaints || [];
       setComplaints(complaintsData);
-      console.log(complaintsData);
-      
-      
+
       const locationMap = {};
       complaintsData.forEach(complaint => {
         const loc = complaint.location || 'Unknown';
@@ -66,7 +64,7 @@ const ComplaintMap = () => {
         const radius = 180;
         const centerX = 300;
         const centerY = 250;
-        
+
         return {
           ...area,
           x: centerX + radius * Math.cos(angle),
@@ -76,7 +74,7 @@ const ComplaintMap = () => {
       });
 
       setAreas(areasArray);
-      
+
       const conns = [];
       for (let i = 0; i < areasArray.length; i++) {
         for (let j = i + 1; j < Math.min(i + 3, areasArray.length); j++) {
@@ -84,7 +82,7 @@ const ComplaintMap = () => {
         }
       }
       setConnections(conns);
-      
+
     } catch (err) {
       console.error("Error fetching complaints:", err);
     } finally {
@@ -93,32 +91,40 @@ const ComplaintMap = () => {
   };
 
   const updateStatus = async (complaintId, newStatus) => {
-  try {
-    const res = await fetch(`http://localhost:5000/api/complaint/status`, {
-      method: "PUT",
-      headers: getAuthHeaders(true),
-      body: JSON.stringify({ id: complaintId, status: newStatus }),
-    });
+    try {
+      const res = await fetch(`http://localhost:5000/api/complaint/status`, {
+        method: "PUT",
+        headers: getAuthHeaders(true),
+        body: JSON.stringify({ id: complaintId, status: newStatus }),
+      });
 
-    if (res.ok) {
-      await fetchComplaints();
-      alert(`Status updated to ${newStatus}!`);
-    } else {
-      const error = await res.json();
-      alert('Failed to update: ' + (error.message || 'Unknown error'));
+      if (res.ok) {
+        await fetchComplaints();
+        // Update selectedArea to reflect changes in the UI immediately
+        if (selectedArea) {
+          const updated = selectedArea.complaints.map(c =>
+            c.id === complaintId ? { ...c, status: newStatus } : c
+          );
+          setSelectedArea({ ...selectedArea, complaints: updated });
+        }
+        alert(`Status updated to ${newStatus}!`);
+      } else {
+        const error = await res.json();
+        alert('Failed to update: ' + (error.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error("Error updating status:", err);
+      alert('Error: ' + err.message);
     }
-  } catch (err) {
-    console.error("Error updating status:", err);
-    alert('Error: ' + err.message);
-  }
-};
+  };
 
 
   const undoStatusChange = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/complaint/undo', {
         method: 'POST'
-      , headers: getAuthHeaders(true) });
+        , headers: getAuthHeaders(true)
+      });
       if (res.ok) {
         await fetchComplaints();
         alert('Undo successful!');
@@ -131,7 +137,8 @@ const ComplaintMap = () => {
   const redoStatusChange = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/complaint/redo', {
-        method: 'POST', headers: getAuthHeaders(true) });
+        method: 'POST', headers: getAuthHeaders(true)
+      });
       if (res.ok) {
         await fetchComplaints();
         alert('Redo successful!');
@@ -144,7 +151,7 @@ const ComplaintMap = () => {
   const getSeverityFromComplaints = (complaints) => {
     const highPriority = complaints.filter(c => c.priority === 'High').length;
     const mediumPriority = complaints.filter(c => c.priority === 'Medium').length;
-    
+
     if (highPriority > 2) return 'critical';
     if (highPriority > 0) return 'high';
     if (mediumPriority > 2) return 'medium';
@@ -162,7 +169,7 @@ const ComplaintMap = () => {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'Pending': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
       case 'In Progress': return 'bg-blue-100 text-blue-700 border-blue-300';
       case 'Resolved': return 'bg-green-100 text-green-700 border-green-300';
@@ -175,10 +182,10 @@ const ComplaintMap = () => {
     try {
       const response = await fetch(`http://localhost:5000/api/graph/${mode}/${startArea}`);
       const data = await response.json();
-      
+
       const cluster = data.cluster || [];
       const areaIds = Array.from(new Set(cluster.map(c => c.location?.replace(/\s+/g, '_'))));
-      
+
       setClusterData({
         startArea,
         mode,
@@ -191,7 +198,7 @@ const ComplaintMap = () => {
       const connectedAreas = connections
         .filter(conn => conn.from === startArea || conn.to === startArea)
         .map(conn => conn.from === startArea ? conn.to : conn.from);
-      
+
       setClusterData({
         startArea,
         mode,
@@ -213,7 +220,7 @@ const ComplaintMap = () => {
     try {
       const areaData = areas.find(a => a.id === newComplaint.area);
       const location = areaData?.name || newComplaint.location;
-      
+
       const complaintData = {
         fullName: newComplaint.fullName,
         email: newComplaint.email,
@@ -222,7 +229,6 @@ const ComplaintMap = () => {
         location: location,
         complaintDetails: newComplaint.complaintDetails,
         priority: newComplaint.priority,
-        status: 'Pending'
       };
 
       const response = await fetch('http://localhost:5000/api/complaint', {
@@ -230,18 +236,11 @@ const ComplaintMap = () => {
         headers: getAuthHeaders(true),
         body: JSON.stringify(complaintData)
       });
-      
+
       if (response.ok) {
-        // Add to graph
-        await fetch('http://localhost:5000/api/graph/add', {
-          method: 'POST',
-          headers: getAuthHeaders(true),
-          body: JSON.stringify({ area: location, complaint: complaintData })
-        });
-        
         await fetchComplaints();
         setShowAddForm(false);
-        setNewComplaint({ 
+        setNewComplaint({
           area: '', fullName: '', email: '', phone: '', cnic: '',
           location: '', complaintDetails: '', priority: 'Low'
         });
@@ -281,7 +280,7 @@ const ComplaintMap = () => {
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                 <MapPin size={36} />
-                Live Complaint Map - NA-245
+                Live Complaint Map
               </h1>
               <p className="text-green-50 mt-1">Real-time visualization with graph traversal</p>
             </div>
@@ -348,7 +347,7 @@ const ComplaintMap = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+          {/* <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
             <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
               <Layers size={16} />
               Traversal Algorithm
@@ -356,26 +355,24 @@ const ComplaintMap = () => {
             <div className="flex gap-2">
               <button
                 onClick={() => setTraversalMode('bfs')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                  traversalMode === 'bfs'
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${traversalMode === 'bfs'
                     ? 'bg-green-500 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 BFS
               </button>
               <button
                 onClick={() => setTraversalMode('dfs')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                  traversalMode === 'dfs'
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${traversalMode === 'dfs'
                     ? 'bg-green-500 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 DFS
               </button>
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between mb-2">
@@ -500,7 +497,7 @@ const ComplaintMap = () => {
               <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-md">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Layers size={20} className="text-green-500" />
-                  Cluster Analysis ({clusterData.mode.toUpperCase()})
+                  Cluster Analysis
                 </h3>
                 <div className="space-y-3">
                   <div>
@@ -546,23 +543,28 @@ const ComplaintMap = () => {
               <button onClick={() => setShowComplaintModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
             </div>
             <div className="space-y-4">
-              {selectedArea.complaints.map(complaint => (
-                <div key={complaint.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between mb-3">
-                    <div>
-                      <h4 className="font-semibold">{complaint.fullName}</h4>
-                      <p className="text-sm text-gray-500">{complaint.email} • {complaint.phone}</p>
+              {selectedArea.complaints.map(complaint => {
+                console.log(complaint)
+                return (
+                  <div key={complaint.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between mb-3">
+                      <div>
+                        <h4 className="font-semibold">{complaint?.title}</h4>
+                        <p className="text-sm text-gray-500">{complaint?.user?.email} • {complaint?.user?.mobile}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(complaint.status)}`}>{complaint.status}</span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(complaint.status)}`}>{complaint.status}</span>
+                    <p className="text-sm bg-gray-50 p-3 rounded mb-3">{complaint.description}</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => updateStatus(complaint.id, 'Pending')} disabled={complaint.status === 'Pending'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 disabled:opacity-50">Pending</button>
+                      <button onClick={() => updateStatus(complaint.id, 'In Progress')} disabled={complaint.status === 'In Progress'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50">In Progress</button>
+                      <button onClick={() => updateStatus(complaint.id, 'Resolved')} disabled={complaint.status === 'Resolved'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 disabled:opacity-50">Resolved</button>
+                    </div>
                   </div>
-                  <p className="text-sm bg-gray-50 p-3 rounded mb-3">{complaint.complaintDetails}</p>
-                  <div className="flex gap-2">
-                    <button onClick={() => updateStatus(complaint.user?.email, 'Pending')} disabled={complaint.status === 'Pending'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 disabled:opacity-50">Pending</button>
-                    <button onClick={() => updateStatus(complaint.id, 'In Progress')} disabled={complaint.status === 'In Progress'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50">In Progress</button>
-                    <button onClick={() => updateStatus(complaint.id, 'Resolved')} disabled={complaint.status === 'Resolved'} className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 disabled:opacity-50">Resolved</button>
-                  </div>
-                </div>
-              ))}
+                )
+
+
+              })}
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import { withConnection } from '../services/Db.js';
 
 export const authMiddleware = async (req, res, next) => {
   try {
@@ -7,11 +7,27 @@ export const authMiddleware = async (req, res, next) => {
     if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // Fetch full user object if needed
-    const user = await User.findById(decoded.id);
-    if (!user) return res.status(401).json({ message: 'Unauthorized' });
 
-    req.user = user; // THIS IS KEY
+    const result = await withConnection((conn) =>
+      conn.execute(
+        `SELECT RAWTOHEX(id) AS id, name, email, mobile, role
+         FROM users WHERE id = HEXTORAW(:id)`,
+        { id: decoded.id }
+      )
+    );
+
+    if (result.rows.length === 0)
+      return res.status(401).json({ message: 'Unauthorized' });
+
+    const row = result.rows[0];
+    req.user = {
+      id:     row.ID,
+      name:   row.NAME,
+      email:  row.EMAIL,
+      mobile: row.MOBILE,
+      role:   row.ROLE,
+    };
+
     next();
   } catch (err) {
     console.error(err);
